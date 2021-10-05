@@ -1,3 +1,3 @@
 # CamOverlay-Project
 
-fix synchronization of image download and upload, improve logs
+node.js application to display png image generated from HTML page
