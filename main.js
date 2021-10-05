@@ -2,7 +2,7 @@ const fs = require('fs');
 const CamOverlayAPI = require('camstreamerlib/CamOverlayAPI');
 const request = require('request');
 const https = require('https');
-const path = 'img.jpg';
+const path = 'img.png';
 
 //these are variables that are harded coded in for deminstration and testing purposes
 //assuming that these variables will be passes in from other functions or files
@@ -12,38 +12,45 @@ var camera_username = 'root';
 var camera_pass = 'af895d6s';
 var hcti_user = "851d10e2-3902-4f1d-a649-c7fb42880601";
 var hcti_pass = "c61c9262-31be-461c-9a6d-63840dd1b9f2";
+var html_webpage_url = 'https://camstreamer.com';
+
 
 //calling the main function with the temparary values above
-main(camera_ip, camera_port, camera_username, camera_pass, hcti_user, hcti_pass);
+main(html_webpage_url, camera_ip, camera_port, camera_username, camera_pass, hcti_user, hcti_pass);
 
 //main function
-function main(camera_ip, camera_port, camera_username, camera_pass, hcti_user, hcti_pass){
-  htmlToUrl(hcti_user, hcti_pass);
-  createOverlay(camera_ip, camera_port, camera_username, camera_pass);
+function main(html_webpage_url, camera_ip, camera_port, camera_username, camera_pass, hcti_user, hcti_pass){
+  htmlToUrl(html_webpage_url, camera_ip, camera_port, camera_username, camera_pass, hcti_user, hcti_pass);
+  
 }
 
 // html to http coversion.
-function htmlToUrl(hcti_user, hcti_pass){
+function htmlToUrl(html_webpage_url, camera_ip, camera_port, camera_username, camera_pass, hcti_user, hcti_pass){
   const data = {
-    url: 'https://www.google.com/'
+    url: html_webpage_url
   }
 
   request.post({ url: 'https://hcti.io/v1/image', form: data})
   .auth(hcti_user, hcti_pass)
   .on('data', function(data) {
     const obj = JSON.parse(data);
+    if (obj.error) {
+      console.log("hcti.io error: " + obj.error);
+      return;
+    }
     var url = obj.url;
-    urlToImage(url);
-  })
+    urlToImage(url, camera_ip, camera_port, camera_username, camera_pass);
+  });
 }
 
 //download .jpg file
-function urlToImage(url){
+function urlToImage(url, camera_ip, camera_port, camera_username, camera_pass){
   https.get(url,(res) => { 
     const filePath = fs.createWriteStream(path);
     res.pipe(filePath);
     filePath.on('finish',() => {
-    filePath.close();
+      filePath.close();
+      createOverlay(camera_ip, camera_port, camera_username, camera_pass);
     })
   })
 }
@@ -77,20 +84,20 @@ function createOverlay(camera_ip, camera_port, camera_username, camera_pass) {
           co.cairo('cairo_surface_destroy', imgSurface);
 
           co.showCairoImage(surface, -1.0, -1.0).then(function() {
+            console.log('success');
             process.exit(0);
           }, 
           
           function() {
+            console.log('uploadImageData error');
             process.exit(1);
           }); 
         });
       });
     });
   }, 
-
   function(err) {
     if (err)
       console.log(err)
   });
 };
-
